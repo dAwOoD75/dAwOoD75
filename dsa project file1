@@ -1,0 +1,282 @@
+#include "AVLTree.h"
+#include<iostream>
+using namespace std;
+
+
+int AVLTree::getHeight(Node* node) {
+    if (node == nullptr)
+        return 0;
+    return node->height;
+}
+
+
+int AVLTree::getBalanceFactor(Node* node) {
+    if (node == nullptr)
+        return 0;
+    return getHeight(node->left) - getHeight(node->right);
+}
+Node* AVLTree::rotateRight(Node* y) {
+    Node* x = y->left;
+    Node* T2 = x->right;
+
+    x->right = y;
+    y->left = T2;
+
+    y->height = max(getHeight(y->left), getHeight(y->right)) + 1;
+    x->height = max(getHeight(x->left), getHeight(x->right)) + 1;
+
+    return x;
+}
+
+
+Node* AVLTree::rotateLeft(Node* x) {
+    Node* y = x->right;
+    Node* T2 = y->left;
+
+    y->left = x;
+    x->right = T2;
+
+    x->height = max(getHeight(x->left), getHeight(x->right)) + 1;
+    y->height = max(getHeight(y->left), getHeight(y->right)) + 1;
+
+    return y;
+}
+
+
+Node* AVLTree::balanceNode(Node* node) {
+    int balance = getBalanceFactor(node);
+
+    if (balance > 1) {
+        if (getBalanceFactor(node->left) < 0)
+            node->left = rotateLeft(node->left);
+        return rotateRight(node);
+    }
+    if (balance < -1) {
+        if (getBalanceFactor(node->right) > 0)
+            node->right = rotateRight(node->right);
+        return rotateLeft(node);
+    }
+    return node;
+}
+
+
+Node* AVLTree::insertNode(Node* node, int key) {
+    if (node == nullptr)
+        return new Node(key);
+
+    if (key < node->key)
+        node->left = insertNode(node->left, key);
+    else if (key > node->key)
+        node->right = insertNode(node->right, key);
+    else
+        return node;
+
+    node->height = max(getHeight(node->left), getHeight(node->right)) + 1;
+
+    return balanceNode(node);
+}
+
+
+Node* AVLTree::deleteNode(Node* root, int key) {
+    if (root == nullptr)
+        return root;
+
+    if (key < root->key)
+        root->left = deleteNode(root->left, key);
+    else if (key > root->key)
+        root->right = deleteNode(root->right, key);
+    else {
+        if ((root->left == nullptr) || (root->right == nullptr)) {
+            Node* temp = root->left ? root->left : root->right;
+            if (temp == nullptr) {
+                temp = root;
+                root = nullptr;
+            }
+            else
+                *root = *temp;
+            delete temp;
+        }
+        else {
+            Node* temp = getMinValueNode(root->right);
+            root->key = temp->key;
+            root->right = deleteNode(root->right, temp->key);
+        }
+    }
+
+    if (root == nullptr)
+        return root;
+
+    root->height = std::max(getHeight(root->left), getHeight(root->right)) + 1;
+
+    return balanceNode(root);
+}
+
+
+Node* AVLTree::getMinValueNode(Node* node) {
+    Node* current = node;
+    while (current->left != nullptr)
+        current = current->left;
+    return current;
+}
+
+
+Node* AVLTree::searchNode(Node* node, int key) {
+    if (node == nullptr || node->key == key)
+        return node;
+
+    if (key < node->key)
+        return searchNode(node->left, key);
+    return searchNode(node->right, key);
+}
+
+
+void AVLTree::inorderTraversal(Node* node) {
+    if (node != nullptr) {
+        inorderTraversal(node->left);
+        cout << node->key << " ";
+        inorderTraversal(node->right);
+    }
+}
+
+
+void AVLTree::preorderTraversal(Node* node) {
+    if (node != nullptr) {
+        cout << node->key << " ";
+        preorderTraversal(node->left);
+        preorderTraversal(node->right);
+    }
+}
+
+
+void AVLTree::postorderTraversal(Node* node) {
+    if (node != nullptr) {
+        postorderTraversal(node->left);
+        postorderTraversal(node->right);
+        cout << node->key << " ";
+    }
+}
+
+
+int AVLTree::calculateHeight(Node* node) {
+    if (node == nullptr)
+        return 0;
+    return max(calculateHeight(node->left), calculateHeight(node->right)) + 1;
+}
+
+
+int AVLTree::calculateDiameter(Node* node, int& height) {
+    if (node == nullptr) {
+        height = 0;
+        return 0;
+    }
+
+    int lh = 0, rh = 0;
+    int ldiameter = calculateDiameter(node->left, lh);
+    int rdiameter = calculateDiameter(node->right, rh);
+
+    height = max(lh, rh) + 1;
+
+    return max(lh + rh + 1, max(ldiameter, rdiameter));
+}
+
+
+Node* AVLTree::findSuccessor(Node* node) {
+    if (node == nullptr || node->right == nullptr)
+        return nullptr;
+
+    Node* current = node->right;
+    while (current->left != nullptr)
+        current = current->left;
+    return current;
+}
+
+Node* AVLTree::findPredecessor(Node* node) {
+    if (node == nullptr || node->left == nullptr)
+        return nullptr;
+
+    Node* current = node->left;
+    while (current->right != nullptr)
+        current = current->right;
+    return current;
+}
+
+
+void AVLTree::insert(int key) {
+    root = insertNode(root, key);
+}
+
+
+void AVLTree::remove(int key) {
+    root = deleteNode(root, key);
+}
+
+bool AVLTree::search(int key) {
+    return searchNode(root, key) != nullptr;
+}
+
+void AVLTree::inorder() {
+    inorderTraversal(root);
+    cout << endl;
+}
+
+
+void AVLTree::preorder() {
+    preorderTraversal(root);
+    cout << endl;
+}
+
+
+void AVLTree::postorder() {
+    postorderTraversal(root);
+    cout << endl;
+}
+
+
+int AVLTree::height() {
+    return calculateHeight(root);
+}
+
+
+int AVLTree::diameter() {
+    int height = 0;
+    return calculateDiameter(root, height);
+}
+
+
+int AVLTree::findMin() {
+    Node* minNode = getMinValueNode(root);
+    if (minNode == nullptr)
+        throw runtime_error("Tree is empty");
+    return minNode->key;
+}
+
+
+int AVLTree::findMax() {
+    Node* maxNode = root;
+    while (maxNode->right != nullptr)
+        maxNode = maxNode->right;
+    if (maxNode == nullptr)
+        throw runtime_error("Tree is empty");
+    return maxNode->key;
+}
+
+
+int AVLTree::successor(int key) {
+    Node* node = searchNode(root, key);
+    if (node == nullptr)
+        throw runtime_error("Key not found");
+    Node* successorNode = findSuccessor(node);
+    if (successorNode == nullptr)
+        throw runtime_error("Successor not found");
+    return successorNode->key;
+}
+
+int AVLTree::predecessor(int key) {
+    Node* node = searchNode(root, key);
+    if (node == nullptr)
+        throw runtime_error("Key not found");
+    Node* predecessorNode = findPredecessor(node);
+    if (predecessorNode == nullptr)
+        throw runtime_error("Predecessor not found");
+    return predecessorNode->key;
+}
